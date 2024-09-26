@@ -10,6 +10,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters.command import Command
 
 from config_reader import config
+from jokes_parser import list_of_jokes
 
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
@@ -95,7 +96,9 @@ async def bad(message: types.Message):
 # Отображение анекдота
 @dp.message(F.text.lower() == "да, давай")
 async def yes(message: Message):
-    content = Text("Какой-то анекдот")
+    
+    content = Text(list_of_jokes[0])
+    del list_of_jokes[0]
 
     kb = [
         [
