@@ -11,6 +11,7 @@ from aiogram.filters.command import Command
 
 from config_reader import config
 from jokes_parser import list_of_jokes
+from event_parser import final_result
 
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
@@ -27,7 +28,8 @@ async def cmd_start(message: types.Message):
     await message.answer("Привет! Я - многофункциональный бот, который умеет много разных штук.\n \n" \
                          "<b>Команды:</b> \n/start" \
                          "\n/info" \
-                         "\n/hello", parse_mode='HTML')
+                         "\n/hello" \
+                         "\n/events", parse_mode='HTML')
 
 
 # Хэндлер на команду /hello
@@ -96,9 +98,14 @@ async def bad(message: types.Message):
 # Отображение анекдота
 @dp.message(F.text.lower() == "да, давай")
 async def yes(message: Message):
+    flag = True
     
-    content = Text(list_of_jokes[0])
-    del list_of_jokes[0]
+    if len(list_of_jokes) > 0:
+        content = Text(list_of_jokes[0])
+        del list_of_jokes[0]
+    else:
+        flag = False
+        content = Text("Свежие анекдоты кончились")
 
     kb = [
         [
@@ -111,8 +118,11 @@ async def yes(message: Message):
         keyboard=kb,
         resize_keyboard=True
     )
-
-    await message.answer(**content.as_kwargs(), reply_markup=keyboard)
+    
+    if flag:
+        await message.answer(**content.as_kwargs(), reply_markup=keyboard)
+    else:
+        await message.reply(**content.as_kwargs(), reply_markup=types.ReplyKeyboardRemove())
 
 
 # Завершение цикла отображения анекдотов до отображения анекдотов
@@ -131,6 +141,34 @@ async def more(message: types.Message):
 @dp.message(F.text.lower() == "достаточно")
 async def enought(message: Message):
     await message.reply("Хорошо", reply_markup=types.ReplyKeyboardRemove())
+
+
+# Хэндлер на команду /events
+@dp.message(Command("events"))
+async def cmd_events(message: Message):
+
+    content = Text(f"{final_result[0][0]}\n{final_result[0][1:-1]}\n{final_result[0][-1]}")
+    del final_result[0]
+
+    kb = [
+        [
+            types.KeyboardButton(text="Ещё"),
+            types.KeyboardButton(text="Достаточно")
+        ],
+    ]
+
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=kb,
+        resize_keyboard=True
+    )
+
+    await message.answer(**content.as_kwargs(), reply_markup=keyboard)
+
+
+# Продолжение цикла отображения мероприятий
+@dp.message(F.text.lower() == "ещё")
+async def more_events(message: types.Message):
+    await cmd_events(message)
 
 
 # Хэндлер на команду /info
